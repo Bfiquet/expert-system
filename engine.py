@@ -1,15 +1,4 @@
-from parsing import TruthValue
-
-parser fichier.
-prouver qqch: 
-    partir de ce qu'on doit prouver
-    remonter avec les regles
-    explorer tous les chemins
-    si possible de prouver true 
-    sinon false 
-    si pas de reglesm undetermined
-    
-gerer boucles infinies
+from utils import TruthValue
 
 def prove(fact):
     if fact.initial:
@@ -23,12 +12,9 @@ def prove(fact):
 def evaluate(expr):
     if expr.operator == "FACT":
         return prove(expr.left)
-
     if expr.operator == "AND":
         left = evaluate(expr.left)
         right = evaluate(expr.right)
-
         if left == TruthValue.TRUE and right == TruthValue.TRUE:
             return TruthValue.TRUE
-
         return TruthValue.FALSE
