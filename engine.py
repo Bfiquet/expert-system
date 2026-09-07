@@ -7,6 +7,8 @@ def prove(fact):
         result = evaluate(rule.condition)
         if result == TruthValue.TRUE:
             return TruthValue.TRUE
+    if not fact.initial and len(fact.rules) == 0:
+        return TruthValue.UNDETERMINED
     return TruthValue.FALSE
 
 def evaluate(expr):
@@ -16,5 +18,11 @@ def evaluate(expr):
         left = evaluate(expr.left)
         right = evaluate(expr.right)
         if left == TruthValue.TRUE and right == TruthValue.TRUE:
+            return TruthValue.TRUE
+        return TruthValue.FALSE
+    if expr.operator == "OR":
+        left = evaluate(expr.left)
+        right = evaluate(expr.right)
+        if left == TruthValue.TRUE or right == TruthValue.TRUE:
             return TruthValue.TRUE
         return TruthValue.FALSE

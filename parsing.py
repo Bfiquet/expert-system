@@ -34,6 +34,11 @@ def parse_expression(expression, facts):
 		left = parse_expression(left, facts)
 		right = parse_expression(right, facts)
 		return Expression("AND", left, right)
+	if "|" in expression:
+		left, right = expression.split("|", 1)
+		left = parse_expression(left, facts)
+		right = parse_expression(right, facts)
+		return Expression("OR", left, right)
 	fact = get_fact(facts, expression)
 	return Expression("FACT", fact)
 
