@@ -26,3 +26,9 @@ def evaluate(expr):
         if left == TruthValue.TRUE or right == TruthValue.TRUE:
             return TruthValue.TRUE
         return TruthValue.FALSE
+    if expr.operator == "XOR":
+        left = evaluate(expr.left)
+        right = evaluate(expr.right)
+        if (left == TruthValue.TRUE or right == TruthValue.TRUE) and left != right:
+            return TruthValue.TRUE
+        return TruthValue.FALSE

@@ -22,11 +22,21 @@ class Expression:
 		self.left = left
 		self.right = right
   
+def get_facts_from_expression(expr):
+    if expr.operator == "FACT":
+        return [expr.left]
+    facts = []
+    if expr.left:
+        facts.extend(get_facts_from_expression(expr.left))
+    if expr.right:
+        facts.extend(get_facts_from_expression(expr.right))
+    return facts
+
 def get_fact(facts, name):
 	if name not in facts:
 		facts[name] = Fact(name)
 	return facts[name]
-
+        
 def parse_expression(expression, facts):
 	expression = expression.strip()
 	if "+" in expression:
@@ -39,19 +49,23 @@ def parse_expression(expression, facts):
 		left = parse_expression(left, facts)
 		right = parse_expression(right, facts)
 		return Expression("OR", left, right)
+	if "^" in expression:
+		left, right = expression.split("^", 1)
+		left = parse_expression(left, facts)
+		right = parse_expression(right, facts)
+		return Expression("XOR", left, right)
 	fact = get_fact(facts, expression)
 	return Expression("FACT", fact)
 
 def parse_rule(rule, facts):
-	rule = rule.strip()
-	condition, conclusion = rule.split("=>")
-	condition = condition.strip()
-	conclusion = conclusion.strip()
-	condition_expr = parse_expression(condition, facts)
-	conclusion_fact = get_fact(facts, conclusion)
-	rule = Rule(condition_expr, conclusion_fact)
-	conclusion_fact.rules.append(rule)
-	return rule
+    rule = rule.strip()
+    condition, conclusion = rule.split("=>", 1)
+    condition_expr = parse_expression(condition, facts)
+    conclusion_expr = parse_expression(conclusion, facts)
+    rule = Rule(condition_expr, conclusion_expr)
+    for fact in get_facts_from_expression(conclusion_expr):
+        fact.rules.append(rule)
+    return rule
 
 def parse_file(filename):
 	facts = {}
