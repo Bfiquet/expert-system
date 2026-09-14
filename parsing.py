@@ -23,22 +23,25 @@ class Expression:
 		self.right = right
   
 def get_facts_from_expression(expr):
-    if expr.operator == "FACT":
-        return [expr.left]
-    facts = []
-    if expr.left:
-        facts.extend(get_facts_from_expression(expr.left))
-    if expr.right:
-        facts.extend(get_facts_from_expression(expr.right))
-    return facts
+	if expr.operator == "FACT":
+		return [expr.left]
+	facts = []
+	if expr.left is not None:
+		facts.extend(get_facts_from_expression(expr.left))
+	if expr.right is not None:
+		facts.extend(get_facts_from_expression(expr.right))
+	return facts
 
 def get_fact(facts, name):
 	if name not in facts:
 		facts[name] = Fact(name)
 	return facts[name]
-        
+		
 def parse_expression(expression, facts):
 	expression = expression.strip()
+	if expression.startswith("!"):
+		operand = parse_expression(expression[1:], facts)
+		return Expression("NOT", operand)
 	if "+" in expression:
 		left, right = expression.split("+", 1)
 		left = parse_expression(left, facts)
@@ -58,14 +61,23 @@ def parse_expression(expression, facts):
 	return Expression("FACT", fact)
 
 def parse_rule(rule, facts):
-    rule = rule.strip()
-    condition, conclusion = rule.split("=>", 1)
-    condition_expr = parse_expression(condition, facts)
-    conclusion_expr = parse_expression(conclusion, facts)
-    rule = Rule(condition_expr, conclusion_expr)
-    for fact in get_facts_from_expression(conclusion_expr):
-        fact.rules.append(rule)
-    return rule
+	rule = rule.strip()
+	if "<=>" in rule:
+		left, right = rule.split("<=>", 1)
+		rule1 = parse_rule(left + " => " + right, facts)
+		rule2 = parse_rule(right + " => " + left, facts)
+		return [rule1, rule2]
+	condition, conclusion = rule.split("=>", 1)
+	condition_expr = parse_expression(condition, facts)
+	conclusion_expr = parse_expression(conclusion, facts)
+	rule = Rule(condition_expr, conclusion_expr)
+	for fact in get_facts_from_expression(conclusion_expr):
+		fact.rules.append(rule)
+	print("RULE:", rule)
+	print("CONDITION:", condition_expr.operator)
+	print("CONCLUSION:", conclusion_expr.operator)
+	print("CONCLUSION FACTS:", [f.name for f in get_facts_from_expression(conclusion_expr)])
+	return [rule]
 
 def parse_file(filename):
 	facts = {}
@@ -100,7 +112,7 @@ def main():
 	facts, rules, queries = parse_file(args.file)
 	parsed_rules = []
 	for rule in rules:
-		parsed_rules.append(parse_rule(rule, facts))
+		parsed_rules.extend(parse_rule(rule, facts))
 	rules = parsed_rules
 	for query in queries:
 		fact = get_fact(facts, query)
