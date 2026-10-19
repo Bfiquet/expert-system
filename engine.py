@@ -43,43 +43,32 @@ def contains_fact(expr, fact):
 def evaluate(expr, visiting):
     if expr.operator == "FACT":
         return prove(expr.left, visiting)
-
     if expr.operator == "NOT":
         result = evaluate(expr.left, visiting)
-
         if result == TruthValue.TRUE:
             return TruthValue.FALSE
-
         if result == TruthValue.FALSE:
             return TruthValue.TRUE
-
         return TruthValue.UNDETERMINED
-
     if expr.operator == "AND":
         left = evaluate(expr.left, visiting)
         right = evaluate(expr.right, visiting)
-
         if left == TruthValue.TRUE and right == TruthValue.TRUE:
             return TruthValue.TRUE
-
+        if left == TruthValue.TRUE and right == TruthValue.UNDETERMINED or left == TruthValue.UNDETERMINED and right == TruthValue.TRUE:
+            return TruthValue.UNDETERMINED
         return TruthValue.FALSE
-
     if expr.operator == "OR":
         left = evaluate(expr.left, visiting)
         right = evaluate(expr.right, visiting)
-
         if left == TruthValue.TRUE or right == TruthValue.TRUE:
             return TruthValue.TRUE
-
         return TruthValue.FALSE
-
     if expr.operator == "XOR":
         left = evaluate(expr.left, visiting)
         right = evaluate(expr.right, visiting)
-
         if (left == TruthValue.TRUE) != (right == TruthValue.TRUE):
             return TruthValue.TRUE
-
         return TruthValue.FALSE
     
 	# def evaluate(expr):

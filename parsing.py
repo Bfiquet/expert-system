@@ -37,29 +37,6 @@ def get_fact(facts, name):
 		facts[name] = Fact(name)
 	return facts[name]
 		
-def parse_expression(expression, facts):
-	expression = expression.strip()
-	if expression.startswith("!"):
-		operand = parse_expression(expression[1:], facts)
-		return Expression("NOT", operand)
-	if "+" in expression:
-		left, right = expression.split("+", 1)
-		left = parse_expression(left, facts)
-		right = parse_expression(right, facts)
-		return Expression("AND", left, right)
-	if "|" in expression:
-		left, right = expression.split("|", 1)
-		left = parse_expression(left, facts)
-		right = parse_expression(right, facts)
-		return Expression("OR", left, right)
-	if "^" in expression:
-		left, right = expression.split("^", 1)
-		left = parse_expression(left, facts)
-		right = parse_expression(right, facts)
-		return Expression("XOR", left, right)
-	fact = get_fact(facts, expression)
-	return Expression("FACT", fact)
-
 def parse_rule(rule, facts):
 	rule = rule.strip()
 	if "<=>" in rule:
@@ -102,6 +79,64 @@ def parse_file(filename):
 				raise ValueError(f"Invalid line: {line}")
 	return facts, rules, queries
 
+def strip_outer_parentheses(expression):
+    """Retire les parenthèses extérieures si elles englobent toute l'expression."""
+    expression = expression.strip()
+    while expression.startswith("(") and expression.endswith(")"):
+        depth = 0
+        wraps_all = True
+        for i, char in enumerate(expression):
+            if char == "(":
+                depth += 1
+            elif char == ")":
+                depth -= 1
+            if depth < 0:
+                raise ValueError("Parenthèses mal fermées")
+            if depth == 0 and i != len(expression) - 1:
+                wraps_all = False
+                break
+        if depth != 0:
+            raise ValueError("Parenthèses mal fermées")
+        if not wraps_all:
+            break
+        expression = expression[1:-1].strip()
+    return expression
+
+def find_top_level_operator(expression, operator):
+    """Trouve un opérateur situé hors des parenthèses."""
+    depth = 0
+    for i, char in enumerate(expression):
+        if char == "(":
+            depth += 1
+        elif char == ")":
+            depth -= 1
+            if depth < 0:
+                raise ValueError("Parenthèses mal fermées")
+        elif char == operator and depth == 0:
+            return i
+    if depth != 0:
+        raise ValueError("Parenthèses mal fermées")
+    return -1
+
+def parse_expression(expression, facts):
+    expression = expression.strip()
+    if not expression:
+        raise ValueError("Expression vide")
+    expression = strip_outer_parentheses(expression)
+    if expression.startswith("!"):
+        operand = parse_expression(expression[1:], facts)
+        return Expression("NOT", operand)
+    for operator, name in [("^", "XOR"), ("|", "OR"), ("+", "AND"), ]:
+        pos = find_top_level_operator(expression, operator)
+        if pos != -1:
+            left = parse_expression(expression[:pos], facts)
+            right = parse_expression(expression[pos + 1:], facts)
+            return Expression(name, left, right)
+    if any(char in expression for char in "()!+|^"):
+        raise ValueError(f"Expression invalide : {expression}")
+    fact = get_fact(facts, expression)
+    return Expression("FACT", fact)
+
 def main():
 	parser = argparse.ArgumentParser(description="backward chaining engine ")
 	parser.add_argument("-v", "--visualize", action="store_true", help="Shows the reasoning")
@@ -124,4 +159,5 @@ def main():
 			print(False)
 		else:
 			print("Undetermined")
+   
 main()
